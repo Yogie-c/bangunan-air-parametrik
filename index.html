@@ -97,6 +97,7 @@ body.printing .sheet{box-shadow:none;margin:0;page-break-after:always;break-afte
   <button id="d3">Unduh model 3D (DXF)</button>
   <button id="pr">Cetak / simpan PDF</button>
   <p>DXF bisa dibuka di AutoCAD, lalu Save As DWG. Model 3D: ketik VSCURRENT, pilih Conceptual, lalu 3DORBIT. Untuk PDF, pilih "Simpan sebagai PDF" di jendela cetak.</p>
+  <div id="ownerPanel" hidden><h2>Persetujuan akun</h2><p>Daftar akun yang belum disetujui.</p><div id="pendingUsers"></div><button id="ownerRefresh" class="sm" type="button">Muat ulang daftar</button></div>
 </aside>
 <main id="mainbox">
   <div class="bar"><button id="t2" class="on">Gambar 2D</button><button id="t3">Model 3D</button><button id="t4">Layout dan cetak</button><label id="rot" hidden>Putar <input autocomplete="off" id="yaw" type="range" min="0" max="360" step="5" value="35"></label></div>
@@ -114,7 +115,7 @@ body.printing .sheet{box-shadow:none;margin:0;page-break-after:always;break-afte
     <div class="g"><button id="authSignIn" type="button">Masuk</button><button id="authSignUp" class="sm" type="button">Daftar akun</button></div>
     <p id="authStatus" class="authStatus" role="status" aria-live="polite"></p>
     <div id="pendingPanel" hidden><h2>Menunggu persetujuan</h2><p>Email sudah masuk. Pemilik perlu menyetujui akun ini sebelum aplikasi dan rancangan dapat dibuka.</p><button id="authPendingOut" class="sm" type="button">Keluar</button></div>
-    <div id="ownerPanel" hidden><h2>Persetujuan akun</h2><p>Daftar akun yang belum disetujui.</p><div id="pendingUsers"></div><button id="ownerRefresh" class="sm" type="button">Muat ulang daftar</button></div>
+    
   </div>
 </section>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
