@@ -1,6 +1,5 @@
-// Isi dari Supabase Dashboard > Project Settings > API.
-// Publishable key memang boleh berada di situs publik; JANGAN masukkan service_role key.
+// Public project settings for the browser. Never place a service_role key here.
 window.APP_CONFIG = {
-  supabaseUrl: "",
-  publishableKey: ""
+  supabaseUrl: "https://kadgrcprxonjsotewfti.supabase.co",
+  publishableKey: "sb_publishable_ByqQAKJHm_yp61CI8LpGEw_Lj45e2-4"
 };
