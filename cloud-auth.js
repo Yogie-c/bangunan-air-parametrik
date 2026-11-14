@@ -5,6 +5,19 @@
   const status = document.getElementById('authStatus');
   const pending = document.getElementById('pendingPanel');
   const ownerPanel = document.getElementById('ownerPanel');
+  if (ownerPanel && !document.getElementById('approvedUsers')) {
+    ownerPanel.querySelector('h2')?.replaceChildren('Kelola akun');
+    const intro = ownerPanel.querySelector('p');
+    if (intro) intro.textContent = 'Atur akun yang boleh memakai aplikasi dan menyimpan rancangan online.';
+    const pendingHeading = document.createElement('h3'); pendingHeading.textContent = 'Menunggu persetujuan';
+    ownerPanel.insertBefore(pendingHeading, document.getElementById('pendingUsers'));
+    const heading = document.createElement('h3'); heading.textContent = 'Akun yang punya akses';
+    const note = document.createElement('p'); note.textContent = 'Cabut akses untuk memblokir data cloud, atau hapus akun beserta semua rancangan cloud-nya.';
+    const box = document.createElement('div'); box.id = 'approvedUsers';
+    const refresh = document.createElement('button'); refresh.id = 'approvedRefresh'; refresh.className = 'sm'; refresh.type = 'button'; refresh.textContent = 'Muat ulang akun';
+    ownerPanel.append(heading, note, box, refresh);
+  }
+  const approvedBox = document.getElementById('approvedUsers');
   const cloudBox = document.createElement('section');
   cloudBox.id = 'cloudBox';
   cloudBox.innerHTML = `<strong>Rancangan online</strong>
@@ -73,9 +86,49 @@
         const { error: approveError } = await client.functions.invoke('owner-approvals', { body: { action: 'approve', userId: button.dataset.approve } });
         if (approveError) throw approveError;
         say('Akun disetujui. Pengguna perlu masuk ulang agar akses aktif.');
-        await loadPending();
+        await Promise.all([loadPending(), loadApproved()]);
       } catch (error) {
         say(error.message || 'Persetujuan gagal.', true);
+        button.disabled = false;
+      }
+    });
+  }
+
+  async function loadApproved() {
+    approvedBox.innerHTML = '<p>Memuat akun…</p>';
+    const { data, error } = await client.functions.invoke('owner-approvals', { body: { action: 'list-approved' } });
+    if (error) throw error;
+    const users = data.users || [];
+    approvedBox.innerHTML = users.length ? users.map(user => `<div class="pendingRow">
+      <span>${esc(user.email || '(email tidak ada)')}<br><small>Disetujui · ${new Date(user.created_at).toLocaleDateString('id-ID')}</small></span>
+      <span class="accountActions"><button class="sm warn" data-revoke="${esc(user.id)}" type="button">Cabut akses</button><button class="sm danger" data-delete="${esc(user.id)}" data-email="${esc(user.email || 'akun ini')}" type="button">Hapus akun</button></span></div>`
+    ).join('') : '<p>Belum ada akun pengguna yang disetujui.</p>';
+
+    approvedBox.querySelectorAll('[data-revoke]').forEach(button => button.onclick = async () => {
+      if (!confirm('Cabut akses akun ini? Akses data cloud akan langsung diblokir, tetapi akun tidak dihapus.')) return;
+      button.disabled = true;
+      try {
+        const { error: actionError } = await client.functions.invoke('owner-approvals', { body: { action: 'revoke', userId: button.dataset.revoke } });
+        if (actionError) throw actionError;
+        say('Akses dicabut. Pengguna perlu masuk ulang untuk melihat status terbaru.');
+        await Promise.all([loadPending(), loadApproved()]);
+      } catch (error) {
+        say(error.message || 'Pencabutan akses gagal.', true);
+        button.disabled = false;
+      }
+    });
+
+    approvedBox.querySelectorAll('[data-delete]').forEach(button => button.onclick = async () => {
+      const email = button.dataset.email;
+      if (!confirm(`Hapus permanen ${email}? Akun dan semua rancangan cloud miliknya akan dihapus dan tidak dapat dipulihkan.`)) return;
+      button.disabled = true;
+      try {
+        const { error: actionError } = await client.functions.invoke('owner-approvals', { body: { action: 'delete', userId: button.dataset.delete } });
+        if (actionError) throw actionError;
+        say('Akun dan rancangan cloud miliknya telah dihapus.');
+        await Promise.all([loadPending(), loadApproved()]);
+      } catch (error) {
+        say(error.message || 'Penghapusan akun gagal.', true);
         button.disabled = false;
       }
     });
@@ -98,7 +151,7 @@
     if (!signedIn) { say('Masuk dengan email yang sudah terdaftar.'); return; }
     if (!approved) { say('Akun terverifikasi dan menunggu persetujuan pemilik.'); return; }
     say('Akses disetujui.');
-    if (isOwner) loadPending().catch(error => say(error.message || 'Daftar akun tidak dapat dimuat.', true));
+    if (isOwner) Promise.all([loadPending(), loadApproved()]).catch(error => say(error.message || 'Daftar akun tidak dapat dimuat.', true));
     try { await refreshCloud(); }
     catch (error) { document.getElementById('cloudNote').textContent = 'Gagal memuat daftar rancangan: ' + (error.message || 'periksa koneksi'); }
   }
@@ -124,6 +177,7 @@
   document.getElementById('authPendingOut').onclick = () => client.auth.signOut();
   document.getElementById('authSignOut').onclick = () => client.auth.signOut();
   document.getElementById('ownerRefresh').onclick = () => loadPending().catch(error => say(error.message || 'Daftar akun tidak dapat dimuat.', true));
+  document.getElementById('approvedRefresh').onclick = () => loadApproved().catch(error => say(error.message || 'Daftar akun tidak dapat dimuat.', true));
 
   document.getElementById('cloudSave').onclick = async () => {
     const button = document.getElementById('cloudSave'); button.disabled = true;
